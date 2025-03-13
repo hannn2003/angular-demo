@@ -5,13 +5,16 @@ import { UsersService } from '../services/users.service';
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
-  styleUrl: './users.component.css',
+  styleUrls: ['./users.component.css'],
 })
 export class UsersComponent implements OnInit {
-  constructor(private userService: UsersService) {}
   users: User[] = [];
+  currentUser: User = { username: '', email: '' };
   isOpenModal = false;
-  newUser: User = { username: '', email: '' };
+  isEdit = false;
+  isView = false;
+
+  constructor(private userService: UsersService) {}
 
   ngOnInit(): void {
     this.getUsers();
@@ -27,25 +30,65 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  openModal() {
-    this.isOpenModal = true;
+  openModal(
+    openModal = false,
+    openView = false,
+    openEdit = false,
+    user?: User
+  ) {
+    this.isOpenModal = openModal;
+    this.isEdit = openEdit;
+    this.isView = openView;
+    this.currentUser = user ? { ...user } : { username: '', email: '' };
   }
 
   closeModal() {
     this.isOpenModal = false;
-    this.newUser = { username: '', email: '' };
+    this.currentUser = { username: '', email: '' };
+    this.isEdit = false;
   }
 
-  createNewUser() {
-    if (!this.newUser.username || !this.newUser.email) {
-      return;
-    }
-    this.userService.create(this.newUser).subscribe({
+  detail(user_id: string) {
+    this.userService.getUser(user_id).subscribe({
       next: (data) => {
-        this.users.push(data);
-        this.closeModal();
+        this.currentUser = data;
+        this.isOpenModal = true;
+        this.isEdit = false;
+        this.isView = true;
       },
-      error: (err) => console.log('Error:', err),
+      error: (e) => console.log(e),
+    });
+  }
+
+  saveUser() {
+    if (!this.currentUser?.username || !this.currentUser?.email) return;
+    if (this.isEdit) {
+      this.userService
+        .updateUser(this.currentUser.id, this.currentUser)
+        .subscribe({
+          next: () => {
+            this.getUsers();
+            this.closeModal();
+          },
+          error: (e) => console.log(e),
+        });
+    } else {
+      this.userService.create(this.currentUser).subscribe({
+        next: () => {
+          this.getUsers();
+          this.closeModal();
+        },
+        error: (e) => console.log(e),
+      });
+    }
+  }
+
+  delete(user_id: string) {
+    this.userService.deleteUser(user_id).subscribe({
+      next: () => {
+        this.getUsers();
+      },
+      error: (e) => console.log(e),
     });
   }
 }

@@ -13,6 +13,7 @@ export class UsersComponent implements OnInit {
   isOpenModal = false;
   isEdit = false;
   isView = false;
+  isLoadingGlobal: boolean = false;
 
   constructor(private userService: UsersService) {}
 
@@ -60,35 +61,62 @@ export class UsersComponent implements OnInit {
     });
   }
 
+  // saveUser() {
+  //   if (!this.currentUser?.username || !this.currentUser?.email) return;
+  //   if (this.isEdit) {
+  //     this.userService
+  //       .updateUser(this.currentUser.id, this.currentUser)
+  //       .subscribe({
+  //         next: () => {
+  //           this.getUsers();
+  //           this.closeModal();
+  //         },
+  //         error: (e) => console.log(e),
+  //       });
+  //   } else {
+  //     this.userService.create(this.currentUser).subscribe({
+  //       next: () => {
+  //         this.getUsers();
+  //         this.closeModal();
+  //       },
+  //       error: (e) => console.log(e),
+  //     });
+  //   }
+  // }
+
   saveUser() {
     if (!this.currentUser?.username || !this.currentUser?.email) return;
-    if (this.isEdit) {
-      this.userService
-        .updateUser(this.currentUser.id, this.currentUser)
-        .subscribe({
-          next: () => {
-            this.getUsers();
-            this.closeModal();
-          },
-          error: (e) => console.log(e),
-        });
-    } else {
-      this.userService.create(this.currentUser).subscribe({
-        next: () => {
-          this.getUsers();
-          this.closeModal();
-        },
-        error: (e) => console.log(e),
-      });
-    }
+
+    this.isLoadingGlobal = true;
+
+    const saveObservable = this.isEdit
+      ? this.userService.updateUser(this.currentUser.id, this.currentUser)
+      : this.userService.create(this.currentUser);
+
+    saveObservable.subscribe({
+      next: () => {
+        this.getUsers();
+        this.isLoadingGlobal = false;
+        this.closeModal();
+      },
+      error: (e) => {
+        console.log(e);
+        this.isLoadingGlobal = false;
+      },
+    });
   }
 
   delete(user_id: string) {
+    this.isLoadingGlobal = true;
     this.userService.deleteUser(user_id).subscribe({
       next: () => {
         this.getUsers();
+        this.isLoadingGlobal = false;
       },
-      error: (e) => console.log(e),
+      error: (e) => {
+        console.log(e);
+        this.isLoadingGlobal = false;
+      },
     });
   }
 }
